@@ -16,6 +16,7 @@
 			<p>Share this link to send your LUA script.</p>
 			<p>This link contains your script as base64. Nobody can change your local script.</p>
 			<code
+				data-testid="share-link"
 				class="rounded-md border bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap select-all"
 			>
 				{link}

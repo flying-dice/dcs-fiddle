@@ -52,7 +52,7 @@
 				onValueChange={(id) => id && environment.setEnvironment(id, env.selectedState)}
 			>
 				{#each environment.environments as it (it.id)}
-					<ToggleGroup.Item value={it.id}>{it.name}</ToggleGroup.Item>
+					<ToggleGroup.Item value={it.id} data-testid="env-{it.id}">{it.name}</ToggleGroup.Item>
 				{/each}
 			</ToggleGroup.Root>
 			<Tooltip.Root>
@@ -86,18 +86,20 @@
 				states={env.states}
 				onSelect={(state) => environment.setEnvironment(env.id, state)}
 			/>
-			{#if status.state === "up"}
-				<CircleCheck class="size-5 text-green-500" />
-			{:else if status.state === "checking"}
-				<LoaderCircle class="size-5 animate-spin" />
-			{:else}
-				<CircleX class="size-5 text-red-500" />
-			{/if}
+			<span data-testid="connection-status" data-state={status.state}>
+				{#if status.state === "up"}
+					<CircleCheck class="size-5 text-green-500" />
+				{:else if status.state === "checking"}
+					<LoaderCircle class="size-5 animate-spin" />
+				{:else}
+					<CircleX class="size-5 text-red-500" />
+				{/if}
+			</span>
 		</div>
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="ghost" size="icon" disabled={status.state !== "up"} onclick={onExplore}>
+					<Button {...props} variant="ghost" size="icon" disabled={status.state !== "up"} onclick={onExplore} data-testid="explore-button">
 						<Compass />
 					</Button>
 				{/snippet}
@@ -107,7 +109,7 @@
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="ghost" size="icon" onclick={onShowGreetingModal}>
+					<Button {...props} variant="ghost" size="icon" onclick={onShowGreetingModal} data-testid="info-button">
 						<Info />
 					</Button>
 				{/snippet}
@@ -117,7 +119,7 @@
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="ghost" size="icon" onclick={onSettings}>
+					<Button {...props} variant="ghost" size="icon" onclick={onSettings} data-testid="settings-button">
 						<Settings />
 					</Button>
 				{/snippet}
@@ -127,7 +129,7 @@
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="secondary" onclick={onShare}>
+					<Button {...props} variant="secondary" onclick={onShare} data-testid="share-button">
 						Share <Share2 />
 					</Button>
 				{/snippet}
@@ -137,7 +139,7 @@
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} disabled={status.state !== "up" || submitting} onclick={onSubmit}>
+					<Button {...props} disabled={status.state !== "up" || submitting} onclick={onSubmit} data-testid="send-button">
 						{#if submitting}
 							<LoaderCircle class="animate-spin" />
 						{/if}

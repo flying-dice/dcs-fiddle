@@ -13,7 +13,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-md sm:max-w-md">
+	<Dialog.Content data-testid="settings-modal" class="max-w-md sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Settings</Dialog.Title>
 			<Dialog.Description>Saved to this device. Tune the console to your screen.</Dialog.Description>
@@ -23,6 +23,7 @@
 				<Label for="max-responses">Recent results kept</Label>
 				<Input
 					id="max-responses"
+					data-testid="settings-max-responses"
 					type="number"
 					min="1"
 					step="1"
@@ -37,6 +38,7 @@
 				<Label for="too-large">"Too large" threshold (MB)</Label>
 				<Input
 					id="too-large"
+					data-testid="settings-too-large"
 					type="number"
 					min="0.1"
 					step="0.1"

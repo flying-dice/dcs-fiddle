@@ -126,12 +126,18 @@
 	const childHidden = (key: string | number) => filtering && childMatched[key] !== true;
 </script>
 
-<li class={hidden ? "hidden" : "flex items-start gap-1 py-px"}>
+<li
+	class={hidden ? "hidden" : "flex items-start gap-1 py-px"}
+	data-testid="explore-node"
+	data-name={k}
+	data-address={minimatchAddress}
+>
 	<Button
 		variant="ghost"
 		size="icon-sm"
 		disabled={!explorable || fetching}
 		onclick={() => (data ? (data = undefined) : fetchData())}
+		data-testid="explore-toggle"
 	>
 		{#if fetching}
 			<LoaderCircle class="animate-spin" />
@@ -161,7 +167,7 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						{#snippet child({ props })}
-							<Button {...props} variant="ghost" size="icon-xs" onclick={copyData}>
+							<Button {...props} variant="ghost" size="icon-xs" onclick={copyData} data-testid="explore-copy">
 								{#if copied}
 									<Check class="text-blue-400" />
 								{:else}

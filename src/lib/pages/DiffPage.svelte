@@ -99,6 +99,7 @@
 			<Label for="left-miz">Left *</Label>
 			<Input
 				id="left-miz"
+				data-testid="diff-left"
 				type="file"
 				disabled={status.state !== "up"}
 				onchange={onPick("left")}
@@ -108,6 +109,7 @@
 			<Label for="right-miz">Right *</Label>
 			<Input
 				id="right-miz"
+				data-testid="diff-right"
 				type="file"
 				disabled={status.state !== "up" || leftJson === undefined}
 				onchange={onPick("right")}
@@ -122,6 +124,7 @@
 						selectedFile === it && "bg-muted font-medium"
 					)}
 					onclick={() => (selectedFile = it)}
+					data-testid="diff-file"
 				>
 					{it}
 				</button>

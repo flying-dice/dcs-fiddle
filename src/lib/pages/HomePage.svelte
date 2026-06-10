@@ -37,10 +37,10 @@
 		<FileList />
 	</div>
 	<div class="flex min-h-0 border-b md:border-r md:border-b-0">
-		<CodeEditor bind:value={code} language="lua" />
+		<CodeEditor bind:value={code} language="lua" testid="lua-editor" />
 	</div>
 	<div class="flex min-h-0 overflow-y-auto">
-		<div class="flex flex-1 flex-col gap-1 p-2">
+		<div class="flex flex-1 flex-col gap-1 p-2" data-testid="response-list">
 			{#each commands.responses as [date, response] (date)}
 				<Response {date} {response} />
 			{/each}

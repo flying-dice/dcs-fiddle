@@ -56,13 +56,14 @@
 					router.path === doc.path && "bg-muted font-medium"
 				)}
 				onclick={() => router.navigate(doc.path)}
+				data-testid="docs-nav"
 			>
 				{doc.label}
 			</button>
 		{/each}
 	</div>
 	<div class="flex-1 overflow-y-auto py-8">
-		<div class="markdown mx-auto max-w-3xl px-6">
+		<div class="markdown mx-auto max-w-3xl px-6" data-testid="docs-content">
 			{#await loadDoc(src)}
 				<p class="text-muted-foreground">Loading…</p>
 			{:then html}

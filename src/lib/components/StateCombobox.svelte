@@ -50,6 +50,7 @@
 				variant="outline"
 				role="combobox"
 				aria-expanded={open}
+				data-testid="state-combobox"
 				class={cn("w-44 justify-between font-normal", !value && "text-muted-foreground")}
 			>
 				<span class="truncate">{value ?? "Add Optional State"}</span>
@@ -59,13 +60,14 @@
 	</Popover.Trigger>
 	<Popover.Content class="w-44 p-0" align="start">
 		<Command.Root>
-			<Command.Input placeholder="Search or type…" bind:value={search} />
+			<Command.Input placeholder="Search or type…" bind:value={search} data-testid="state-search" />
 			<Command.List>
 				{#if isCustom}
 					<Command.Empty class="p-1">
 						<button
 							class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-muted"
 							onclick={() => choose(trimmed)}
+						data-testid="state-custom"
 						>
 							<Plus class="size-4" />
 							Use "{trimmed}"
@@ -75,12 +77,12 @@
 					<Command.Empty>No states found.</Command.Empty>
 				{/if}
 				<Command.Group>
-					<Command.Item value="__default__" keywords={["default"]} onSelect={() => choose(undefined)}>
+					<Command.Item value="__default__" keywords={["default"]} onSelect={() => choose(undefined)} data-testid="state-default">
 						<Check class={cn("size-4", value ? "opacity-0" : "opacity-100")} />
 						<span class="text-muted-foreground italic">Default</span>
 					</Command.Item>
 					{#each states as state (state)}
-						<Command.Item value={state} onSelect={() => choose(state)}>
+						<Command.Item value={state} onSelect={() => choose(state)} data-testid="state-option-{state}">
 							<Check class={cn("size-4", value === state ? "opacity-100" : "opacity-0")} />
 							{state}
 						</Command.Item>

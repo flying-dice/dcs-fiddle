@@ -32,12 +32,12 @@
 	}
 </script>
 
-<div class="flex flex-col gap-0.5">
+<div class="flex flex-col gap-0.5" data-testid="response-item">
 	<div class="flex items-center gap-2 p-1">
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="ghost" size="icon-sm" onclick={() => (collapsed = !collapsed)}>
+					<Button {...props} variant="ghost" size="icon-sm" onclick={() => (collapsed = !collapsed)} data-testid="response-collapse">
 						{#if collapsed}
 							<ChevronRight />
 						{:else}
@@ -52,7 +52,7 @@
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="ghost" size="icon-sm" onclick={openInTab}>
+					<Button {...props} variant="ghost" size="icon-sm" onclick={openInTab} data-testid="response-open-tab">
 						<ExternalLink />
 					</Button>
 				{/snippet}
@@ -67,6 +67,7 @@
 						variant="ghost"
 						size="icon-sm"
 						onclick={() => downloadFile(displayRes, `${date}.json`)}
+						data-testid="response-download"
 					>
 						<Download />
 					</Button>
@@ -77,7 +78,7 @@
 	</div>
 	{#if !collapsed}
 		{#if isTooLarge}
-			<pre class="rounded-md border bg-muted p-3 font-mono text-sm">{tooLargeMessage}</pre>
+			<pre class="rounded-md border bg-muted p-3 font-mono text-sm" data-testid="response-too-large">{tooLargeMessage}</pre>
 		{:else}
 			<div
 				class="overflow-hidden rounded-md border"

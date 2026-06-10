@@ -20,7 +20,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-h-[85vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
+	<Dialog.Content data-testid="greeting-modal" class="max-h-[85vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>Welcome to DCS Fiddle</Dialog.Title>
 		</Dialog.Header>
@@ -79,7 +79,7 @@
 					/>
 					<Label for="dont-show-again">Dont Show Again</Label>
 				</div>
-				<Button onclick={() => (open = false)}>Proceed</Button>
+				<Button onclick={() => (open = false)} data-testid="greeting-proceed">Proceed</Button>
 			</div>
 		</div>
 	</Dialog.Content>

@@ -12,7 +12,8 @@
 		value = $bindable(""),
 		language = "lua",
 		readOnly = false,
-	}: { value?: string; language?: "lua" | "json"; readOnly?: boolean } = $props();
+		testid,
+	}: { value?: string; language?: "lua" | "json"; readOnly?: boolean; testid?: string } = $props();
 
 	let container: HTMLDivElement;
 	let view = $state<EditorView>();
@@ -59,4 +60,4 @@
 	});
 </script>
 
-<div bind:this={container} class="h-full min-h-0 w-full overflow-hidden"></div>
+<div bind:this={container} data-testid={testid} class="h-full min-h-0 w-full overflow-hidden"></div>

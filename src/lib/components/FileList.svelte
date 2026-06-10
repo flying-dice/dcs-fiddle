@@ -25,10 +25,10 @@
 	}
 </script>
 
-<div class="flex h-full min-h-0 flex-col">
+<div class="flex h-full min-h-0 flex-col" data-testid="file-list">
 	<div class="flex items-center justify-between border-b px-2 py-1.5">
 		<span class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Files</span>
-		<Button variant="ghost" size="icon-sm" title="New file" onclick={() => files.create()}>
+		<Button variant="ghost" size="icon-sm" title="New file" onclick={() => files.create()} data-testid="file-new">
 			<FilePlus />
 		</Button>
 	</div>
@@ -39,12 +39,16 @@
 					"group flex items-center gap-1 rounded-md px-2 py-1 text-sm",
 					file.id === files.activeId ? "bg-muted" : "hover:bg-muted/50"
 				)}
+				data-testid="file-item"
+				data-name={file.name}
+				data-active={file.id === files.activeId}
 			>
 				{#if renamingId === file.id}
 					<input
 						class="w-full rounded-sm bg-background px-1 font-mono text-sm outline-none ring-1 ring-ring"
 						bind:value={renameValue}
 						use:focusSelect
+						data-testid="file-rename-input"
 						onblur={commitRename}
 						onkeydown={(e) => {
 							if (e.key === "Enter") commitRename();
@@ -57,6 +61,7 @@
 						onclick={() => files.select(file.id)}
 						ondblclick={() => startRename(file)}
 						title={file.name}
+						data-testid="file-name"
 					>
 						{file.name}
 					</button>
@@ -66,6 +71,7 @@
 						class="opacity-0 group-hover:opacity-100"
 						title="Rename"
 						onclick={() => startRename(file)}
+						data-testid="file-rename"
 					>
 						<Pencil />
 					</Button>
@@ -75,6 +81,7 @@
 						class="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
 						title="Delete"
 						onclick={() => files.remove(file.id)}
+						data-testid="file-delete"
 					>
 						<Trash2 />
 					</Button>

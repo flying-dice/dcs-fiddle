@@ -10,7 +10,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="flex max-h-[85vh] w-[50vw] max-w-[50vw] flex-col sm:max-w-[50vw]">
+	<Dialog.Content data-testid="explorer-modal" class="flex max-h-[85vh] w-[50vw] max-w-[50vw] flex-col sm:max-w-[50vw]">
 		<Dialog.Header>
 			<Dialog.Title>Explorer</Dialog.Title>
 		</Dialog.Header>
@@ -25,6 +25,7 @@
 					class="pl-8"
 					placeholder="Search using minimatch syntax, i.e. */db/Units/Planes/Plane/*/*+(Name|type|WorldID)"
 					bind:value={filter}
+					data-testid="explorer-search"
 				/>
 			</div>
 			<ul class="min-h-0 overflow-y-auto">
