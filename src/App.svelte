@@ -13,27 +13,21 @@
 	import DocsPage from "$lib/pages/DocsPage.svelte";
 	import { commands } from "$lib/dcs/commands.svelte";
 	import { environment } from "$lib/dcs/environment.svelte";
+	import { files } from "$lib/files.svelte";
 	import { router } from "$lib/router.svelte";
 
 	const params = new URLSearchParams(window.location.search);
 	const sharedCommand = params.get("command");
 
-	// Persist the editor buffer per browser tab so a reload doesn't lose work
-	// (issue #10, first slice). sessionStorage keeps tabs independent; durable
-	// named files / GitHub sync remain follow-up scope.
-	const SCRATCH_KEY = "dcs-fiddle-scratch";
-	let code = $state(
-		sharedCommand
-			? atob(sharedCommand)
-			: (sessionStorage.getItem(SCRATCH_KEY) ?? "return env.mission.theatre")
-	);
-	$effect(() => {
+	// A shared link drops its script into a new virtual file (issue #10) rather
+	// than overwriting whatever the user already has open.
+	if (sharedCommand) {
 		try {
-			sessionStorage.setItem(SCRATCH_KEY, code);
+			files.create("shared.lua", atob(sharedCommand));
 		} catch {
-			// ignore storage failures
+			// ignore malformed share payload
 		}
-	});
+	}
 
 	let greetingOpen = $state(localStorage.getItem("DONT_SHOW_AGAIN") !== "true");
 	let exploreOpen = $state(false);
@@ -43,7 +37,7 @@
 
 	function openShare() {
 		const url = new URL(window.location.origin);
-		url.searchParams.set("command", btoa(code));
+		url.searchParams.set("command", btoa(files.active.content));
 		url.searchParams.set("env", environment.environment.id);
 		if (environment.environment.selectedState) {
 			url.searchParams.set("state", environment.environment.selectedState);
@@ -76,7 +70,7 @@
 	>
 		<AppHeader
 			submitting={commands.submitting}
-			onSubmit={() => commands.submit(code)}
+			onSubmit={() => commands.submit(files.active.content)}
 			onShare={openShare}
 			onShowGreetingModal={() => (greetingOpen = true)}
 			onExplore={() => (exploreOpen = true)}
@@ -91,7 +85,7 @@
 					<DocsPage src={docSrc} />
 				{/key}
 			{:else}
-				<HomePage bind:code />
+				<HomePage />
 			{/if}
 		</main>
 	</div>

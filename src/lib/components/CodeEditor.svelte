@@ -15,11 +15,19 @@
 	}: { value?: string; language?: "lua" | "json"; readOnly?: boolean } = $props();
 
 	let container: HTMLDivElement;
-	let view: EditorView;
+	let view = $state<EditorView>();
 
 	export function getValue() {
 		return view?.state.doc.toString() ?? value;
 	}
+
+	// Keep the editor in sync when `value` is replaced externally (e.g. switching
+	// files). Guarded so the editor's own edits don't trigger a redundant reset.
+	$effect(() => {
+		if (view && value !== view.state.doc.toString()) {
+			view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
+		}
+	});
 
 	onMount(() => {
 		const extensions: Extension[] = [
@@ -47,7 +55,7 @@
 			state: EditorState.create({ doc: value, extensions }),
 		});
 
-		return () => view.destroy();
+		return () => view?.destroy();
 	});
 </script>
 
