@@ -16,10 +16,6 @@ Anything that is clearly a table is still converted to a table
 
 fiddlejson = { _version = "0.2.0" }
 
--- Server version, queryable by the UI to detect an out-of-date installed hook.
--- Bump this whenever the server (this file) changes in a user-visible way.
-fiddle_server_version = "0.3.0"
-
 -------------------------------------------------------------------------------
 -- Encode
 -------------------------------------------------------------------------------
@@ -885,10 +881,7 @@ local socket = require("socket")
 local clients = {}
 local tcp_server
 
--- client_timeout bounds how long a single request read may block the DCS sim
--- thread. Sockets returned by accept() are blocking by default, so without this
--- a client that connects but never sends a full request would hang the loop.
-local server_config = { cors = "*", client_timeout = 5 }
+local server_config = { cors = "*" }
 
 local client_id_seq = 1
 
@@ -910,9 +903,6 @@ end
 local function handle_client_connection(client)
     -- Dictionary of Headers that need to match, failure to match fails the read operation and returns the error code
     local response = { status = INTERNAL_SERVER_ERROR, headers = { ["Content-Type"] = "application/json"} }
-
-    -- Bound the request read so a silent/slow client can't freeze the sim thread.
-    client:settimeout(server_config.client_timeout)
 
     local request = receive_http(client)
 
@@ -946,9 +936,6 @@ local function handle_client_connection(client)
         response.headers["Access-Control-Allow-Origin"] = server_config.cors
     end
 
-    -- Restore blocking for the write so a large response isn't truncated by the
-    -- read timeout set above.
-    client:settimeout(nil)
     send_http(client, response)
 
     __info("Connection Completed")
@@ -957,18 +944,12 @@ end
 
 
 local function create_server(address, port)
-    local bind_err
-    tcp_server, bind_err = socket.bind(address, port)
-
-    -- Check the bind succeeded before using the socket. socket.bind returns
-    -- nil + an error message (e.g. when the port is already in use), and
-    -- calling a method on a nil socket would crash with a confusing error.
-    if not tcp_server then
-        __error("Could not bind socket on " .. address .. ":" .. port .. ": " .. tostring(bind_err))
-        return
-    end
-
+    tcp_server = socket.bind(address, port)
     tcp_server:settimeout(0) -- Make non blocking
+
+    if not tcp_server then
+        __error("Could not bind socket.")
+    end
 
     local ip, port = tcp_server:getsockname()
 
@@ -979,11 +960,11 @@ local function create_server(address, port)
     return function()
         local client = tcp_server:accept()
         if (client) then
-            -- handle_client_connection sends the response itself; guard it
-            -- with pcall so a handler error is logged rather than thrown.
-            local success, err = pcall(handle_client_connection, client)
+            local success, res = handle_client_connection(client)
             if (not success) then
-                __error("Failed to run client handler: " .. tostring(err))
+                __error("Failed to run client handler " .. res)
+            else
+                clients[id].receive_patten = res
             end
         end
     end
@@ -1001,20 +982,16 @@ if (isMission) then
     __info("Starting fiddle server in the mission scripting environment...")
     local loop = create_server("127.0.0.1", 12080)
 
-    if (loop) then
-        timer.scheduleFunction(function(arg, time)
-            local success, err = pcall(loop)
-            if not success then
-                __info("loop() error: " .. tostring(err))
-            end
-            return timer.getTime() + .1
-        end, nil, timer.getTime() + .1)
+    timer.scheduleFunction(function(arg, time)
+        local success, err = pcall(loop)
+        if not success then
+            __info("loop() error: " .. tostring(err))
+        end
+        return timer.getTime() + .1
+    end, nil, timer.getTime() + .1)
 
-        __info("DCS Fiddle server running")
-        env.info("DCS Fiddle successfully initialized.\n\nHappy Hacking!!", true)
-    else
-        env.error("DCS Fiddle failed to start: could not bind 127.0.0.1:12080. Is another instance already running?", true)
-    end
+    __info("DCS Fiddle server running")
+    env.info("DCS Fiddle successfully initialized.\n\nHappy Hacking!!", true)
 elseif (not isMission) then
     __info("Starting fiddle server in the Hooks environment...")
 
@@ -1030,9 +1007,7 @@ elseif (not isMission) then
     end
 
     function callbacks.onSimulationFrame()
-        if (loop) then
-            loop()
-        end
+        loop()
     end
 
     DCS.setUserCallbacks(callbacks)
