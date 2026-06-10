@@ -47,8 +47,8 @@
 	}
 </script>
 
-<div class="flex min-h-0 overflow-hidden" style="grid-column: 2/4; grid-row: 2/3">
-	<div class="flex min-w-64 flex-col gap-2 overflow-y-auto p-4">
+<div class="flex h-full min-h-0 overflow-hidden">
+	<div class="flex w-40 shrink-0 flex-col gap-2 overflow-y-auto p-3 md:w-64 md:p-4">
 		{#each docs as doc (doc.path)}
 			<button
 				class={cn(

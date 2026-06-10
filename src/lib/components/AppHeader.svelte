@@ -7,6 +7,7 @@
 	import LoaderCircle from "@lucide/svelte/icons/loader-circle";
 	import Send from "@lucide/svelte/icons/send";
 	import Share2 from "@lucide/svelte/icons/share-2";
+	import Settings from "@lucide/svelte/icons/settings";
 	import { Button } from "$lib/components/ui/button";
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import * as ToggleGroup from "$lib/components/ui/toggle-group";
@@ -19,26 +20,31 @@
 		onShare,
 		onShowGreetingModal,
 		onExplore,
+		onSettings,
 	}: {
 		submitting: boolean;
 		onSubmit: () => void;
 		onShare: () => void;
 		onShowGreetingModal: () => void;
 		onExplore: () => void;
+		onSettings: () => void;
 	} = $props();
 
 	const env = $derived(environment.environment);
 	const status = $derived(environment.status);
 </script>
 
-<header class="z-10 flex items-center justify-between border-b px-3 py-2" style="grid-row: 1/2; grid-column: 1/4">
+<header
+	class="z-10 flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2"
+	style="grid-row: 1/2; grid-column: 1/3"
+>
 	<div class="flex items-center gap-3">
-		<img src="/logo256.png" alt="DCS Fiddle logo" class="size-12" />
-		<h1 class="font-mono text-2xl font-bold">DCS Fiddle...</h1>
+		<img src="/logo256.png" alt="DCS Fiddle logo" class="size-9 md:size-12" />
+		<h1 class="font-mono text-lg font-bold md:text-2xl">DCS Fiddle...</h1>
 	</div>
-	<div class="flex items-center gap-3">
+	<div class="flex flex-wrap items-center gap-2 md:gap-3">
 		<div class="flex items-center gap-2">
-			<span class="text-lg font-semibold">Environment:</span>
+			<span class="hidden text-lg font-semibold sm:inline">Environment:</span>
 			<ToggleGroup.Root
 				type="single"
 				variant="outline"
@@ -107,6 +113,16 @@
 				{/snippet}
 			</Tooltip.Trigger>
 			<Tooltip.Content side="bottom">Information</Tooltip.Content>
+		</Tooltip.Root>
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="ghost" size="icon" onclick={onSettings}>
+						<Settings />
+					</Button>
+				{/snippet}
+			</Tooltip.Trigger>
+			<Tooltip.Content side="bottom">Settings</Tooltip.Content>
 		</Tooltip.Root>
 		<Tooltip.Root>
 			<Tooltip.Trigger>

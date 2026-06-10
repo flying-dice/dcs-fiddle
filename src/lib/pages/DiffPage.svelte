@@ -93,8 +93,8 @@
 	});
 </script>
 
-<div class="flex min-h-0 border-b" style="grid-column: 2/4; grid-row: 2/3">
-	<div class="flex w-[300px] shrink-0 flex-col gap-2 overflow-y-auto border-r p-3">
+<div class="flex h-full min-h-0">
+	<div class="flex w-[220px] shrink-0 flex-col gap-2 overflow-y-auto border-r p-3 md:w-[300px]">
 		<div class="flex flex-col gap-1.5">
 			<Label for="left-miz">Left *</Label>
 			<Input
