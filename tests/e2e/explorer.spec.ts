@@ -90,6 +90,25 @@ test.describe("namespace explorer", () => {
 		await expect(node(page, "world")).toBeHidden();
 	});
 
+	test("bounds ** auto-expand to the configured depth", async ({ page }) => {
+		await openExplorer(page);
+		await page.getByTestId("explorer-search").fill("*/db/**");
+		await page.getByTestId("explorer-search").press("Enter");
+		// default ** depth is 1: db -> Units -> Planes loads, but no deeper
+		await expect(node(page, "Planes")).toBeVisible();
+		await expect(node(page, "F15")).toHaveCount(0);
+	});
+
+	test("a higher ** depth reaches deeper nodes", async ({ page }) => {
+		await page.addInitScript(() =>
+			localStorage.setItem("dcs-fiddle-settings", JSON.stringify({ exploreWildcardDepth: 3 }))
+		);
+		await openExplorer(page);
+		await page.getByTestId("explorer-search").fill("*/db/**");
+		await page.getByTestId("explorer-search").press("Enter");
+		await expect(node(page, "F15")).toBeVisible();
+	});
+
 	test("the expand button is disabled for non-path patterns", async ({ page }) => {
 		await openExplorer(page);
 		await page.getByTestId("explorer-search").fill("trigger");

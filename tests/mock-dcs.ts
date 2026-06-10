@@ -27,7 +27,13 @@ const tree: Record<string, Record<string, unknown>> = {
 		Weapons: "table",
 	},
 	'_G["db"]["Units"]': {
-		Planes: "function listPlanes(0 args)",
+		Planes: "table",
+	},
+	'_G["db"]["Units"]["Planes"]': {
+		F15: "table",
+	},
+	'_G["db"]["Units"]["Planes"]["F15"]': {
+		displayName: "F-15C Eagle",
 	},
 	'_G["db"]["Weapons"]': {
 		bombs: "function listBombs(0 args)",
@@ -71,6 +77,7 @@ interface Reply {
 function reply(command: string): Reply {
 	const c = command.trim();
 	if (c === 'return "UP"') return { status: 200, body: { result: "UP" } };
+	if (c.includes("fiddle_server_version")) return { status: 200, body: { result: "0.3.0" } };
 	if (c.includes("__ERROR__")) return { status: 500, body: { error: "boom: simulated DCS error" } };
 	if (c.includes("__BIG__")) return { status: 200, body: { result: "x".repeat(1_100_000) } };
 

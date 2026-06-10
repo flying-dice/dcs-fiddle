@@ -7,6 +7,7 @@
 	import { Input } from "$lib/components/ui/input";
 	import { Button } from "$lib/components/ui/button";
 	import { autoExpand } from "$lib/explore-autoexpand.svelte";
+	import { settings } from "$lib/settings.svelte";
 	import ExploreNode from "./ExploreNode.svelte";
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
@@ -17,7 +18,7 @@
 	const canSweep = $derived(filter.trim().includes("/"));
 
 	function sweep() {
-		if (!autoExpand.request(filter)) {
+		if (!autoExpand.request(filter, settings.exploreWildcardDepth)) {
 			toast.message("Use a path pattern with /", {
 				description: "e.g. */db/Units/* — bare words only filter already-loaded nodes.",
 			});

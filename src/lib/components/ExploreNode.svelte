@@ -163,7 +163,7 @@
 		autoExpand.generation;
 		untrack(() => {
 			if (!explorable || data || fetching) return;
-			if (!autoExpand.shouldFetch(minimatchAddress)) return;
+			if (!autoExpand.shouldFetch(minimatchAddress, myScope.length)) return;
 			if (autoExpand.claim()) void fetchData();
 		});
 	});

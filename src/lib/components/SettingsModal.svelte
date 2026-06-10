@@ -49,6 +49,23 @@
 					Responses bigger than this show a download/open-in-tab prompt instead of rendering inline.
 				</p>
 			</div>
+			<div class="flex flex-col gap-1.5">
+				<Label for="wildcard-depth">Explorer <code class="font-mono">**</code> depth</Label>
+				<Input
+					id="wildcard-depth"
+					data-testid="settings-wildcard-depth"
+					type="number"
+					min="0"
+					step="1"
+					value={settings.exploreWildcardDepth}
+					oninput={(e) =>
+						(settings.exploreWildcardDepth = num(e.currentTarget.value, 0, settings.exploreWildcardDepth))}
+				/>
+				<p class="text-xs text-muted-foreground">
+					How many levels a <code class="font-mono">**</code> descends when "load matching nodes"
+					auto-expands. Specific paths aren't limited.
+				</p>
+			</div>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>

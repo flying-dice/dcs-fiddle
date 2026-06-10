@@ -38,4 +38,33 @@ test.describe("environment", () => {
 		await page.getByTestId("state-default").click();
 		await expect(page.getByTestId("state-combobox")).toContainText("Add Optional State");
 	});
+
+	test("no out-of-date indicator when the server version matches", async ({ page }) => {
+		await gotoApp(page);
+		await expect(page.getByTestId("server-outdated")).toHaveCount(0);
+	});
+
+	test("flags an out-of-date server", async ({ page }) => {
+		// intercept the version probe and report an old version
+		await page.route("**://127.0.0.1:12080/**", async (route) => {
+			let cmd = "";
+			try {
+				cmd = atob(decodeURIComponent(new URL(route.request().url()).pathname.slice(1)));
+			} catch {
+				// ignore
+			}
+			if (cmd.includes("fiddle_server_version")) {
+				await route.fulfill({
+					status: 200,
+					contentType: "application/json",
+					headers: { "Access-Control-Allow-Origin": "*" },
+					body: JSON.stringify({ result: "0.1.0" }),
+				});
+			} else {
+				await route.continue();
+			}
+		});
+		await gotoApp(page);
+		await expect(page.getByTestId("server-outdated")).toBeVisible();
+	});
 });

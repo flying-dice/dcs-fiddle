@@ -20,21 +20,35 @@ class AutoExpand {
 	capped = $state(false);
 
 	#budget = $state(0);
+	#maxDepth = $state(0);
 
-	/** Request a sweep. Returns false (no-op) for non-path patterns. */
-	request(pattern: string, budget = DEFAULT_BUDGET): boolean {
+	/**
+	 * Request a sweep. Returns false (no-op) for non-path patterns.
+	 *
+	 * `wildcardDepth` bounds how far a `**` token descends so an open-ended
+	 * pattern can't eagerly fetch an entire subtree. Concrete path
+	 * segments still count fully, so a specific deep pattern is unaffected. Node
+	 * depth (its `_G/...` scope length) is 1-based and aligns with the pattern's
+	 * segment count, so the cap is simply the segment count with each `**`
+	 * expanded to `wildcardDepth` levels.
+	 */
+	request(pattern: string, wildcardDepth = 1, budget = DEFAULT_BUDGET): boolean {
 		const p = pattern.trim();
 		if (!p.includes("/")) return false;
 		this.pattern = p;
 		this.#budget = budget;
+		this.#maxDepth = p
+			.split("/")
+			.reduce((d, seg) => d + (seg === "**" ? Math.max(0, wildcardDepth) : 1), 0);
 		this.capped = false;
 		this.generation += 1;
 		return true;
 	}
 
-	/** Would a node at `path` be on the way to (or be) a match? */
-	shouldFetch(path: string): boolean {
+	/** Would a node at `path` (at `depth` levels) be on the way to a match? */
+	shouldFetch(path: string, depth: number): boolean {
 		if (this.pattern === "") return false;
+		if (depth > this.#maxDepth) return false;
 		return minimatch(path, this.pattern, { partial: true });
 	}
 

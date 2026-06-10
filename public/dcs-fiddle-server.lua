@@ -16,6 +16,10 @@ Anything that is clearly a table is still converted to a table
 
 fiddlejson = { _version = "0.2.0" }
 
+-- Server version, queryable by the UI to detect an out-of-date installed hook.
+-- Bump this whenever the server (this file) changes in a user-visible way.
+fiddle_server_version = "0.3.0"
+
 -------------------------------------------------------------------------------
 -- Encode
 -------------------------------------------------------------------------------

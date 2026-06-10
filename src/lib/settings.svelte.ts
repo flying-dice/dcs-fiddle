@@ -5,12 +5,15 @@ const DEFAULTS = {
 	maxResponses: 50,
 	/** Responses larger than this (MB) show a download prompt instead of rendering inline. */
 	tooLargeMb: 1,
+	/** How many levels a `**` wildcard descends during an explorer auto-expand. */
+	exploreWildcardDepth: 1,
 };
 
-/** User-configurable preview limits, persisted to local storage (issue #9). */
+/** User-configurable limits, persisted to local storage (issue #9). */
 class SettingsStore {
 	maxResponses = $state(DEFAULTS.maxResponses);
 	tooLargeMb = $state(DEFAULTS.tooLargeMb);
+	exploreWildcardDepth = $state(DEFAULTS.exploreWildcardDepth);
 
 	constructor() {
 		try {
@@ -19,6 +22,8 @@ class SettingsStore {
 				const s = JSON.parse(raw);
 				if (Number.isFinite(s.maxResponses)) this.maxResponses = s.maxResponses;
 				if (Number.isFinite(s.tooLargeMb)) this.tooLargeMb = s.tooLargeMb;
+				if (Number.isFinite(s.exploreWildcardDepth))
+					this.exploreWildcardDepth = s.exploreWildcardDepth;
 			}
 		} catch {
 			// ignore malformed/blocked storage
@@ -29,7 +34,11 @@ class SettingsStore {
 				try {
 					localStorage.setItem(
 						KEY,
-						JSON.stringify({ maxResponses: this.maxResponses, tooLargeMb: this.tooLargeMb })
+						JSON.stringify({
+							maxResponses: this.maxResponses,
+							tooLargeMb: this.tooLargeMb,
+							exploreWildcardDepth: this.exploreWildcardDepth,
+						})
 					);
 				} catch {
 					// ignore storage failures (private mode, quota)

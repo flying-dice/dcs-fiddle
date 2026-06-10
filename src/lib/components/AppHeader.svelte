@@ -8,10 +8,12 @@
 	import Send from "@lucide/svelte/icons/send";
 	import Share2 from "@lucide/svelte/icons/share-2";
 	import Settings from "@lucide/svelte/icons/settings";
+	import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 	import { Button } from "$lib/components/ui/button";
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import * as ToggleGroup from "$lib/components/ui/toggle-group";
 	import StateCombobox from "./StateCombobox.svelte";
+	import { config } from "$lib/config";
 	import { environment } from "$lib/dcs/environment.svelte";
 
 	let {
@@ -95,6 +97,27 @@
 					<CircleX class="size-5 text-red-500" />
 				{/if}
 			</span>
+			{#if environment.outdated}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<a
+								{...props}
+								href={config.script.src}
+								download="dcs-fiddle-server.lua"
+								data-testid="server-outdated"
+							>
+								<TriangleAlert class="size-5 text-amber-500" />
+							</a>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content side="bottom" class="max-w-xs">
+						Fiddle server is out of date{environment.serverVersion
+							? ` (v${environment.serverVersion})`
+							: ""}. Download and reinstall the latest hook into Scripts/Hooks.
+					</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
 		</div>
 		<Tooltip.Root>
 			<Tooltip.Trigger>
