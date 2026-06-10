@@ -9,6 +9,7 @@
 	import ToggleLeft from "@lucide/svelte/icons/toggle-left";
 	import Type from "@lucide/svelte/icons/type";
 	import Box from "@lucide/svelte/icons/box";
+	import { untrack } from "svelte";
 	import { toast } from "svelte-sonner";
 	import * as Tooltip from "$lib/components/ui/tooltip";
 	import { Button } from "$lib/components/ui/button";
@@ -16,6 +17,7 @@
 	import { executeLua } from "$lib/dcs/client";
 	import { getExploreCommand } from "$lib/dcs/explore";
 	import { pathMatchesFilter } from "$lib/explore-filter";
+	import { autoExpand } from "$lib/explore-autoexpand.svelte";
 	import ExploreNode from "./ExploreNode.svelte";
 
 	let {
@@ -121,6 +123,18 @@
 	const matched = $derived(filtering ? selfMatched || anyChildMatched : true);
 	$effect(() => {
 		onMatchChange?.(matched);
+	});
+
+	// Auto-expand: on a sweep, fetch this node if it's an unloaded table whose
+	// path is on the way to a match. Children mount and continue the cascade,
+	// bounded by the shared budget. Only `generation` is reactive here.
+	$effect(() => {
+		autoExpand.generation;
+		untrack(() => {
+			if (!explorable || data || fetching) return;
+			if (!autoExpand.shouldFetch(minimatchAddress)) return;
+			if (autoExpand.claim()) void fetchData();
+		});
 	});
 
 	const childHidden = (key: string | number) => filtering && childMatched[key] !== true;

@@ -65,6 +65,28 @@ test.describe("namespace explorer", () => {
 		await expect(node(page, "y")).toContainText("200");
 	});
 
+	test("auto-expands into unexpanded nodes for a path pattern", async ({ page }) => {
+		await openExplorer(page);
+		// without expanding anything, a path glob + Enter should walk into db
+		await page.getByTestId("explorer-search").fill("*/db/**");
+		await page.getByTestId("explorer-search").press("Enter");
+
+		await expect(node(page, "db")).toBeVisible();
+		await expect(node(page, "Units")).toBeVisible();
+		await expect(node(page, "Weapons")).toBeVisible();
+		await expect(node(page, "Planes")).toBeVisible();
+		// pruned: non-matching siblings stay hidden
+		await expect(node(page, "world")).toBeHidden();
+	});
+
+	test("the expand button is disabled for non-path patterns", async ({ page }) => {
+		await openExplorer(page);
+		await page.getByTestId("explorer-search").fill("trigger");
+		await expect(page.getByTestId("explorer-expand")).toBeDisabled();
+		await page.getByTestId("explorer-search").fill("*/db/*");
+		await expect(page.getByTestId("explorer-expand")).toBeEnabled();
+	});
+
 	test("copies a node's data to the clipboard", async ({ page }) => {
 		await openExplorer(page);
 		await toggle(page, "_G").click();

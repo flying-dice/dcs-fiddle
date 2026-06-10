@@ -17,9 +17,20 @@ const tree: Record<string, Record<string, unknown>> = {
 		world: "table",
 		trigger: "table",
 		mixed: "table",
+		db: "table",
 		greeting: "function greeting(name)",
 		version: 2.5,
 		debugEnabled: true,
+	},
+	'_G["db"]': {
+		Units: "table",
+		Weapons: "table",
+	},
+	'_G["db"]["Units"]': {
+		Planes: "function listPlanes()",
+	},
+	'_G["db"]["Weapons"]': {
+		bombs: "function listBombs()",
 	},
 	'_G["world"]': {
 		getPlayer: "function getPlayer()",
