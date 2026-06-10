@@ -1,10 +1,20 @@
 /**
- * Builds the Lua command used by the explorer. It inspects the addressed
- * table, summarising every entry as either its primitive value, a
- * `function name(args)` signature, or its type name, then encodes the
- * summary to JSON (DCS has no consistent JSON API across environments).
+ * Lua introspection commands for the explorer.
+ *
+ * `getExploreCommand` lists a table's entries cheaply: function values are
+ * summarised by *arity* via `debug.getinfo` (which does NOT call the function),
+ * so listing a function-dense table — like the GUI/export namespace — no longer
+ * costs one debug-hook + pcall per function. The result is JSON-encoded (DCS has
+ * no consistent JSON API across environments).
+ *
+ * `getSignatureCommand` resolves the actual parameter names for a *single*
+ * function on demand (when the user expands it), paying the expensive
+ * introspection only for that one function.
  */
-export const getExploreCommand = (item: string) => `
+
+// Reads a Lua function's parameter names by entering it under a call-hook and
+// pulling locals before the body runs. Expensive — only used per-function.
+const GET_ARGS = `
 function getArgs(fun)
     local args = {}
     local hook = debug.gethook()
@@ -29,7 +39,24 @@ function getArgs(fun)
 
     return args
 end
+`;
 
+export const getExploreCommand = (item: string) => `
+-- Cheap function summary: parameter count via getinfo, no call required.
+local function funcSummary(k, fun)
+    local info = debug.getinfo(fun, "u")
+    local arity
+    if info and info.nparams ~= nil then
+        if info.isvararg then
+            arity = (info.nparams > 0) and (info.nparams .. "+ args") or "varargs"
+        else
+            arity = info.nparams .. ((info.nparams == 1) and " arg" or " args")
+        end
+    else
+        arity = "..."
+    end
+    return 'function '..k..'('..arity..')'
+end
 
 local function getMeta (data)
     local meta = {}
@@ -40,7 +67,7 @@ local function getMeta (data)
         if t == 'string' or t == 'number' or t == 'nil' or t == 'boolean' then
             meta[k] = v
         elseif t == 'function' then
-            meta[k] = t..' '..k..'('..table.concat(getArgs(v), ', ')..')'
+            meta[k] = funcSummary(k, v)
         else
             meta[k] = t
         end
@@ -175,4 +202,10 @@ encode = function(val, stack)
 end
 
 return encode(meta)
+`;
+
+/** Resolves the comma-joined parameter names of a single function, on demand. */
+export const getSignatureCommand = (item: string) => `
+${GET_ARGS}
+return table.concat(getArgs(${item}), ", ")
 `;

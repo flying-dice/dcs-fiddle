@@ -15,7 +15,7 @@
 	import { Button } from "$lib/components/ui/button";
 	import { environment } from "$lib/dcs/environment.svelte";
 	import { executeLua } from "$lib/dcs/client";
-	import { getExploreCommand } from "$lib/dcs/explore";
+	import { getExploreCommand, getSignatureCommand } from "$lib/dcs/explore";
 	import { pathMatchesFilter } from "$lib/explore-filter";
 	import { autoExpand } from "$lib/explore-autoexpand.svelte";
 	import ExploreNode from "./ExploreNode.svelte";
@@ -50,10 +50,20 @@
 	const minimatchAddress = $derived(myScope.join("/"));
 
 	const explorable = $derived(v === "table" || v === "root");
+	const isFunction = $derived(typeof v === "string" && v.startsWith("function"));
 
 	let data = $state<Record<string, unknown> | unknown[] | undefined>(undefined);
 	let fetching = $state(false);
 	let copied = $state(false);
+
+	// Resolved parameter names for a function, fetched on demand (expensive).
+	let signature = $state<string | undefined>(undefined);
+	let signatureFetching = $state(false);
+
+	// Function listings only carry arity (cheap); show the real signature once fetched.
+	const displayValue = $derived(
+		isFunction && signature !== undefined ? `function ${k}(${signature})` : String(v)
+	);
 
 	async function fetchData() {
 		const { port, selectedState } = environment.environment;
@@ -66,6 +76,27 @@
 			toast.error("Failed", { description: String(e) });
 		} finally {
 			fetching = false;
+		}
+	}
+
+	async function fetchSignature() {
+		const { port, selectedState } = environment.environment;
+		try {
+			signatureFetching = true;
+			const res = await executeLua(port, getSignatureCommand(address), selectedState);
+			signature = String(res.result ?? "");
+		} catch (e) {
+			toast.error("Failed", { description: String(e) });
+		} finally {
+			signatureFetching = false;
+		}
+	}
+
+	function onToggle() {
+		if (explorable) {
+			data ? (data = undefined) : fetchData();
+		} else if (isFunction) {
+			fetchSignature();
 		}
 	}
 
@@ -149,11 +180,12 @@
 	<Button
 		variant="ghost"
 		size="icon-sm"
-		disabled={!explorable || fetching}
-		onclick={() => (data ? (data = undefined) : fetchData())}
+		disabled={(!explorable && !isFunction) || fetching || signatureFetching}
+		title={isFunction ? "Show signature" : undefined}
+		onclick={onToggle}
 		data-testid="explore-toggle"
 	>
-		{#if fetching}
+		{#if fetching || signatureFetching}
 			<LoaderCircle class="animate-spin" />
 		{:else if explorable}
 			{#if data}
@@ -163,7 +195,7 @@
 			{/if}
 		{:else if typeof v === "number"}
 			<Hash />
-		{:else if typeof v === "string" && v.startsWith("function")}
+		{:else if isFunction}
 			<SquareFunction />
 		{:else if typeof v === "boolean"}
 			<ToggleLeft />
@@ -176,7 +208,7 @@
 	<div class="flex min-w-0 flex-col">
 		<div class="flex items-center gap-2 py-1">
 			<span class="font-mono text-sm">{k}</span>
-			<span class="text-sm text-muted-foreground italic">{String(v)}</span>
+			<span class="text-sm text-muted-foreground italic">{displayValue}</span>
 			{#if data}
 				<Tooltip.Root>
 					<Tooltip.Trigger>

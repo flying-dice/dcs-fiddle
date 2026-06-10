@@ -19,7 +19,7 @@ test.describe("namespace explorer", () => {
 		await toggle(page, "_G").click();
 		await expect(node(page, "trigger")).toBeVisible();
 		await expect(node(page, "world")).toBeVisible();
-		await expect(node(page, "greeting")).toContainText("function greeting(name)");
+		await expect(node(page, "greeting")).toContainText("function greeting(1 arg)");
 		await expect(node(page, "version")).toContainText("2.5");
 	});
 
@@ -29,7 +29,18 @@ test.describe("namespace explorer", () => {
 		await toggle(page, "trigger").click();
 		await expect(node(page, "action")).toBeVisible();
 		await toggle(page, "action").click();
-		await expect(node(page, "outText")).toContainText("function outText(text, time)");
+		// listing shows cheap arity, not the full signature
+		await expect(node(page, "outText")).toContainText("function outText(3 args)");
+	});
+
+	test("expands a single function's signature on demand", async ({ page }) => {
+		await openExplorer(page);
+		await toggle(page, "_G").click();
+		// arity by default
+		await expect(node(page, "greeting")).toContainText("1 arg");
+		// clicking the function resolves its real parameter names
+		await toggle(page, "greeting").click();
+		await expect(node(page, "greeting")).toContainText("function greeting(playerName)");
 	});
 
 	test("filters live and keeps ancestors of a deep match", async ({ page }) => {
