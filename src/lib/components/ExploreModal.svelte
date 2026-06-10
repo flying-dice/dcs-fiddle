@@ -24,7 +24,7 @@
 				<Input
 					class="pl-8"
 					placeholder="Search using minimatch syntax, i.e. */db/Units/Planes/Plane/*/*+(Name|type|WorldID)"
-					onblur={(ev) => (filter = (ev.target as HTMLInputElement).value)}
+					bind:value={filter}
 				/>
 			</div>
 			<ul class="min-h-0 overflow-y-auto">
