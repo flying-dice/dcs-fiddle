@@ -114,7 +114,7 @@
 					<Tooltip.Content side="bottom" class="max-w-xs">
 						Fiddle server is out of date{environment.serverVersion
 							? ` (v${environment.serverVersion})`
-							: ""}. Download and reinstall the latest hook into Scripts/Hooks.
+							: " (no version reported)"}. Download and reinstall the latest hook into Scripts/Hooks.
 					</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}

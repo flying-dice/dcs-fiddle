@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test:lua": "lua5.1 tests/lua/hook-version.spec.lua",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

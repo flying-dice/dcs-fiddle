@@ -1,6 +1,6 @@
 import { toast } from "svelte-sonner";
 import { config, type Env } from "$lib/config";
-import { executeLua } from "./client";
+import { executeLuaWithVersion } from "./client";
 
 export type ConnectionState = "checking" | "up" | "error";
 
@@ -17,11 +17,16 @@ const parseVersion = (v: string): [number, number, number] | null => {
 	return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
 };
 
-/** True when the installed server predates / is older than what the UI expects. */
+/**
+ * True when the installed server predates / is older than what the UI expects.
+ * `undefined` means unknown (not connected yet); "" means the server did not
+ * report a version, i.e. a hook that predates version reporting.
+ */
 export function isServerOutdated(serverVersion: string | undefined, expected: string): boolean {
-	if (serverVersion === undefined) return false; // not probed yet
+	if (serverVersion === undefined) return false; // not known yet
+	if (serverVersion.trim() === "") return true; // predates version reporting
 	const s = parseVersion(serverVersion);
-	if (!s) return true; // empty/garbage => predates versioning
+	if (!s) return false; // malformed: can't tell, so don't claim it is outdated
 	const e = parseVersion(expected);
 	if (!e) return false;
 	for (let i = 0; i < 3; i++) {
@@ -38,8 +43,15 @@ class EnvironmentStore {
 		selectedState: pathState,
 	});
 	status = $state<{ state: ConnectionState; error?: string }>({ state: "checking" });
-	/** Installed server version (probed once per environment); undefined until known. */
+	/**
+	 * Version reported by the running server on its latest health check: "" when
+	 * it reports none (legacy hook), undefined while unknown or disconnected.
+	 */
 	serverVersion = $state<string | undefined>(undefined);
+	// Health checks can resolve out of order (polling, focus, environment
+	// switches); only the newest result for the current selection is applied.
+	#checkSeq = 0;
+	#appliedSeq = 0;
 
 	get outdated() {
 		return this.status.state === "up" && isServerOutdated(this.serverVersion, config.expectedServerVersion);
@@ -50,17 +62,22 @@ class EnvironmentStore {
 		if (!env) return;
 		this.environment = { ...env, selectedState };
 		this.status = { state: "checking" };
-		this.serverVersion = undefined; // re-probe for the new environment
+		this.serverVersion = undefined;
+		this.#appliedSeq = this.#checkSeq; // discard checks issued for the previous selection
 		void this.check();
 	}
 
 	async check() {
+		const seq = ++this.#checkSeq;
 		const { port, selectedState } = this.environment;
 		try {
-			const data = await executeLua(port, 'return "UP"', selectedState);
+			// The server reports its version in a response header from its own
+			// scope, independent of the selected state and of where commands run.
+			const { data, serverVersion } = await executeLuaWithVersion(port, 'return "UP"', selectedState);
+			if (this.#isStale(seq)) return;
 			if (data.result === "UP") {
 				this.status = { state: "up" };
-				if (this.serverVersion === undefined) void this.#probeVersion(port);
+				this.serverVersion = serverVersion ?? "";
 			} else {
 				this.#fail(
 					"Connection Error",
@@ -69,19 +86,16 @@ class EnvironmentStore {
 				);
 			}
 		} catch (e) {
+			if (this.#isStale(seq)) return;
 			this.#fail("Failed to connect", "Failed to connect to the selected environment", String(e));
 		}
 	}
 
-	// Probe the installed server version in the server's own env (always default),
-	// regardless of the user-selected custom state. Missing => "" => treated as old.
-	async #probeVersion(port: number) {
-		try {
-			const data = await executeLua(port, 'return tostring(fiddle_server_version or "")', "default");
-			this.serverVersion = String(data.result ?? "");
-		} catch {
-			// leave undefined; we'll try again on the next successful check
-		}
+	/** True when a newer check (or a selection change) superseded check `seq`. */
+	#isStale(seq: number) {
+		if (seq <= this.#appliedSeq) return true;
+		this.#appliedSeq = seq;
+		return false;
 	}
 
 	#fail(title: string, message: string, error: string) {
@@ -90,6 +104,7 @@ class EnvironmentStore {
 			toast.error(title, { description: `${message}: ${error}` });
 		}
 		this.status = { state: "error", error };
+		this.serverVersion = undefined; // a reconnect may find a different hook
 	}
 
 	/** Starts health-check polling, returns a cleanup function. */
