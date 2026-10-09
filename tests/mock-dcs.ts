@@ -1,7 +1,8 @@
 /**
  * Mock DCS fiddle server for Playwright E2E tests. Listens on the same ports the
  * app uses (12080 Mission, 12081 GUI) and mimics the real hook's contract:
- * base64-encoded Lua in the path, a JSON `{ result | error }` body, CORS open.
+ * base64-encoded Lua in the path, a JSON `{ result | error }` body, CORS open,
+ * and the server version in the X-DCS-Fiddle-Version response header.
  *
  * Command sentinels let tests drive specific behaviours:
  *   return "UP"     -> health check ok
@@ -77,7 +78,6 @@ interface Reply {
 function reply(command: string): Reply {
 	const c = command.trim();
 	if (c === 'return "UP"') return { status: 200, body: { result: "UP" } };
-	if (c.includes("fiddle_server_version")) return { status: 200, body: { result: "0.3.0" } };
 	if (c.includes("__ERROR__")) return { status: 500, body: { error: "boom: simulated DCS error" } };
 	if (c.includes("__BIG__")) return { status: 200, body: { result: "x".repeat(1_100_000) } };
 
@@ -96,22 +96,25 @@ function reply(command: string): Reply {
 	return { status: 200, body: { result: { theatre: "Caucasus", units: [1, 2, 3], echo: c } } };
 }
 
+// Mirrors the version the real hook reports (public/dcs-fiddle-server.lua).
+const SERVER_VERSION = "0.3.1";
+const headers = {
+	"Content-Type": "application/json",
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Expose-Headers": "X-DCS-Fiddle-Version",
+	"X-DCS-Fiddle-Version": SERVER_VERSION,
+};
+
 function handle(req: Request): Response {
 	const path = new URL(req.url).pathname.slice(1);
 	let command = "";
 	try {
 		command = path ? atob(decodeURIComponent(path)) : "";
 	} catch {
-		return new Response(JSON.stringify({ error: "bad base64" }), {
-			status: 400,
-			headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-		});
+		return new Response(JSON.stringify({ error: "bad base64" }), { status: 400, headers });
 	}
 	const { status, body } = reply(command);
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-	});
+	return new Response(JSON.stringify(body), { status, headers });
 }
 
 for (const port of [12080, 12081]) {

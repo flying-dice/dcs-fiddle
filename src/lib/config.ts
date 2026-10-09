@@ -7,7 +7,7 @@ export interface Env {
 
 export const config = {
 	/** Server version this UI expects; older installed hooks are flagged out of date. */
-	expectedServerVersion: "0.3.0",
+	expectedServerVersion: "0.3.1",
 	script: {
 		src: "/dcs-fiddle-server.lua",
 		dest: "%USERPROFILE%\\Saved Games\\DCS\\Scripts\\Hooks\\dcs-fiddle-server.lua",

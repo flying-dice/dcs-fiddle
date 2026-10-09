@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page, type Route } from "@playwright/test";
+import { config } from "../../src/lib/config";
 import { gotoApp } from "./helpers";
 
 test.describe("environment", () => {
@@ -44,27 +45,111 @@ test.describe("environment", () => {
 		await expect(page.getByTestId("server-outdated")).toHaveCount(0);
 	});
 
-	test("flags an out-of-date server", async ({ page }) => {
-		// intercept the version probe and report an old version
-		await page.route("**://127.0.0.1:12080/**", async (route) => {
-			let cmd = "";
-			try {
-				cmd = atob(decodeURIComponent(new URL(route.request().url()).pathname.slice(1)));
-			} catch {
-				// ignore
-			}
-			if (cmd.includes("fiddle_server_version")) {
-				await route.fulfill({
-					status: 200,
-					contentType: "application/json",
-					headers: { "Access-Control-Allow-Origin": "*" },
-					body: JSON.stringify({ result: "0.1.0" }),
-				});
-			} else {
-				await route.continue();
-			}
-		});
+	test("flags a server reporting an older version", async ({ page }) => {
+		await page.route("**://127.0.0.1:12080/**", (route) => fulfillUp(route, "0.1.0"));
 		await gotoApp(page);
 		await expect(page.getByTestId("server-outdated")).toBeVisible();
 	});
+
+	test("does not flag a server reporting a newer version", async ({ page }) => {
+		await page.route("**://127.0.0.1:12080/**", (route) => fulfillUp(route, "9.0.0"));
+		await gotoApp(page);
+		await expect(page.getByTestId("connection-status")).toHaveAttribute("data-state", "up");
+		await settle(page);
+		await expect(page.getByTestId("server-outdated")).toHaveCount(0);
+	});
+
+	test("flags a legacy server that reports no version", async ({ page }) => {
+		await page.route("**://127.0.0.1:12080/**", (route) => fulfillUp(route, null));
+		await gotoApp(page);
+		await expect(page.getByTestId("server-outdated")).toBeVisible();
+	});
+
+	test("reconnecting refreshes the server version", async ({ page }) => {
+		let mode: "old" | "down" | "current" = "old";
+		await page.route("**://127.0.0.1:12080/**", (route) => {
+			if (mode === "down") return route.abort("connectionrefused");
+			return fulfillUp(route, mode === "old" ? "0.1.0" : config.expectedServerVersion);
+		});
+		await gotoApp(page);
+		await expect(page.getByTestId("server-outdated")).toBeVisible();
+
+		// old -> disconnect -> current: the warning clears
+		mode = "down";
+		await recheck(page);
+		await expect(page.getByTestId("connection-status")).toHaveAttribute("data-state", "error");
+		mode = "current";
+		await recheck(page);
+		await expect(page.getByTestId("connection-status")).toHaveAttribute("data-state", "up");
+		await settle(page);
+		await expect(page.getByTestId("server-outdated")).toHaveCount(0);
+
+		// current -> disconnect -> old: the warning returns
+		mode = "down";
+		await recheck(page);
+		await expect(page.getByTestId("connection-status")).toHaveAttribute("data-state", "error");
+		mode = "old";
+		await recheck(page);
+		await expect(page.getByTestId("server-outdated")).toBeVisible();
+	});
+
+	test("a delayed response from the previous environment is ignored", async ({ page }) => {
+		let hold = false;
+		let release!: () => void;
+		const released = new Promise<void>((r) => (release = r));
+		let held!: () => void;
+		const heldReady = new Promise<void>((r) => (held = r));
+		let delivered!: () => void;
+		const deliveredDone = new Promise<void>((r) => (delivered = r));
+
+		await page.route("**://127.0.0.1:12080/**", async (route) => {
+			if (!hold) return fulfillUp(route, config.expectedServerVersion);
+			hold = false;
+			held();
+			await released;
+			// the stale Mission answer claims a legacy hook
+			await fulfillUp(route, null);
+			delivered();
+		});
+		await gotoApp(page);
+
+		hold = true;
+		await recheck(page);
+		await heldReady;
+
+		await page.getByTestId("env-gui").click();
+		await expect(page.getByTestId("env-gui")).toHaveAttribute("data-state", "on");
+		await expect(page.getByTestId("connection-status")).toHaveAttribute("data-state", "up");
+
+		release();
+		await deliveredDone;
+		await settle(page);
+		await expect(page.getByTestId("server-outdated")).toHaveCount(0);
+		await expect(page.getByTestId("connection-status")).toHaveAttribute("data-state", "up");
+	});
 });
+
+/** Answer a health check as "UP", reporting `version` in the header (null: no header). */
+function fulfillUp(route: Route, version: string | null) {
+	const headers: Record<string, string> = {
+		"Access-Control-Allow-Origin": "*",
+		"Access-Control-Expose-Headers": "X-DCS-Fiddle-Version",
+	};
+	if (version !== null) headers["X-DCS-Fiddle-Version"] = version;
+	return route.fulfill({
+		status: 200,
+		contentType: "application/json",
+		headers,
+		body: JSON.stringify({ result: "UP" }),
+	});
+}
+
+/** Trigger an immediate health check (the app re-checks on window focus). */
+function recheck(page: Page) {
+	return page.evaluate(() => window.dispatchEvent(new Event("focus")));
+}
+
+/** Let any in-flight response handling run before asserting on its absence. */
+function settle(page: Page) {
+	return page.evaluate(() => new Promise((r) => setTimeout(r, 250)));
+}

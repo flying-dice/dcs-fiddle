@@ -33,6 +33,12 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
+
+      - name: Run Lua hook tests
+        run: bun run test:lua
+
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
 

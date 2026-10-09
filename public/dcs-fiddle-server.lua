@@ -16,9 +16,13 @@ Anything that is clearly a table is still converted to a table
 
 fiddlejson = { _version = "0.2.0" }
 
--- Server version, queryable by the UI to detect an out-of-date installed hook.
+-- Server version, used by the UI to detect an out-of-date installed hook.
 -- Bump this whenever the server (this file) changes in a user-visible way.
-fiddle_server_version = "0.3.0"
+-- Held in a local so the HTTP server can report it from its own scope: in the
+-- GUI the hook runs in an isolated environment that commands executed via
+-- loadstring cannot see. The global is kept for scripts that read it directly.
+local SERVER_VERSION = "0.3.1"
+fiddle_server_version = SERVER_VERSION
 
 -------------------------------------------------------------------------------
 -- Encode
@@ -890,6 +894,10 @@ local tcp_server
 -- a client that connects but never sends a full request would hang the loop.
 local server_config = { cors = "*", client_timeout = 5 }
 
+-- Response header carrying SERVER_VERSION on every response, so the UI can read
+-- the running server's version from its health check.
+local VERSION_HEADER = "X-DCS-Fiddle-Version"
+
 local client_id_seq = 1
 
 local OK = 200
@@ -909,7 +917,10 @@ end
 
 local function handle_client_connection(client)
     -- Dictionary of Headers that need to match, failure to match fails the read operation and returns the error code
-    local response = { status = INTERNAL_SERVER_ERROR, headers = { ["Content-Type"] = "application/json"} }
+    local response = {
+        status = INTERNAL_SERVER_ERROR,
+        headers = { ["Content-Type"] = "application/json", [VERSION_HEADER] = SERVER_VERSION }
+    }
 
     -- Bound the request read so a silent/slow client can't freeze the sim thread.
     client:settimeout(server_config.client_timeout)
@@ -944,6 +955,7 @@ local function handle_client_connection(client)
 
     if (server_config.cors) then
         response.headers["Access-Control-Allow-Origin"] = server_config.cors
+        response.headers["Access-Control-Expose-Headers"] = VERSION_HEADER
     end
 
     -- Restore blocking for the write so a large response isn't truncated by the
